@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, MapPin, Activity, TrendingUp, LogOut, MessageSquare, Settings, ArrowLeft } from "lucide-react"
+import { Users, MapPin, Activity, TrendingUp, LogOut, MessageSquare, Settings, ArrowLeft, TestTube } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
+import { useAdminAuth } from "@/contexts/admin-auth-context"
 import { LanguageToggle } from "@/components/language-toggle"
+import { ReportGenerator } from "@/components/report-generator"
+import { ReportTest } from "@/components/report-test"
 import Link from "next/link"
 
 interface LocationData {
@@ -21,14 +24,15 @@ export default function AdminDashboard() {
   const [totalUsers, setTotalUsers] = useState(0)
   const [locationData, setLocationData] = useState<LocationData[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [showTestSuite, setShowTestSuite] = useState(false)
   const router = useRouter()
   const { t } = useLanguage()
+  const { checkAdminAuth, logoutAdmin, adminName } = useAdminAuth()
 
   useEffect(() => {
     // Check if user is admin
-    const userRole = localStorage.getItem("userRole")
-    if (userRole !== "admin") {
-      router.push("/login")
+    if (!checkAdminAuth()) {
+      router.push("/admin/login")
       return
     }
 
@@ -43,6 +47,8 @@ export default function AdminDashboard() {
             { name: "Skin Condition", count: 45, severity: "medium" },
             { name: "Eye Infection", count: 23, severity: "low" },
             { name: "Respiratory Issue", count: 12, severity: "high" },
+            { name: "Allergic Reaction", count: 18, severity: "medium" },
+            { name: "Dermatitis", count: 31, severity: "low" },
           ],
           coordinates: [40.7128, -74.006],
         },
@@ -53,6 +59,8 @@ export default function AdminDashboard() {
             { name: "Allergic Reaction", count: 67, severity: "medium" },
             { name: "Skin Rash", count: 34, severity: "low" },
             { name: "Fungal Infection", count: 19, severity: "medium" },
+            { name: "Sun Damage", count: 28, severity: "high" },
+            { name: "Acne", count: 42, severity: "low" },
           ],
           coordinates: [34.0522, -118.2437],
         },
@@ -63,6 +71,8 @@ export default function AdminDashboard() {
             { name: "Cold Symptoms", count: 89, severity: "low" },
             { name: "Skin Irritation", count: 45, severity: "medium" },
             { name: "Eye Strain", count: 23, severity: "low" },
+            { name: "Respiratory Issue", count: 15, severity: "high" },
+            { name: "Eczema", count: 27, severity: "medium" },
           ],
           coordinates: [41.8781, -87.6298],
         },
@@ -73,20 +83,43 @@ export default function AdminDashboard() {
             { name: "Heat Rash", count: 78, severity: "medium" },
             { name: "Insect Bite", count: 56, severity: "low" },
             { name: "Sun Damage", count: 34, severity: "high" },
+            { name: "Dehydration Signs", count: 21, severity: "medium" },
+            { name: "Skin Condition", count: 39, severity: "low" },
           ],
           coordinates: [29.7604, -95.3698],
+        },
+        {
+          name: "Phoenix",
+          users: 142,
+          diseases: [
+            { name: "Sun Damage", count: 92, severity: "high" },
+            { name: "Heat Rash", count: 67, severity: "medium" },
+            { name: "Dehydration Signs", count: 45, severity: "medium" },
+            { name: "Skin Condition", count: 33, severity: "low" },
+            { name: "Eye Irritation", count: 28, severity: "low" },
+          ],
+          coordinates: [33.4484, -112.074],
+        },
+        {
+          name: "Philadelphia",
+          users: 98,
+          diseases: [
+            { name: "Allergic Reaction", count: 43, severity: "medium" },
+            { name: "Respiratory Issue", count: 29, severity: "high" },
+            { name: "Skin Irritation", count: 35, severity: "low" },
+            { name: "Eye Infection", count: 18, severity: "medium" },
+            { name: "Cold Symptoms", count: 52, severity: "low" },
+          ],
+          coordinates: [39.9526, -75.1652],
         },
       ])
       setIsLoading(false)
     }, 1500)
-  }, [router])
+  }, [checkAdminAuth, router])
 
   const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated")
-    localStorage.removeItem("userRole")
-    localStorage.removeItem("userEmail")
-    localStorage.removeItem("userName")
-    router.push("/login")
+    logoutAdmin()
+    router.push("/admin/login")
   }
 
   const getSeverityColor = (severity: string) => {
@@ -115,21 +148,36 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">{t("admin")} Dashboard</h1>
-          <p className="text-muted-foreground">System Overview & Analytics</p>
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <p className="text-muted-foreground">Welcome back, {adminName}</p>
         </div>
         <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTestSuite(!showTestSuite)}
+            className={showTestSuite ? "bg-blue-100" : ""}
+          >
+            <TestTube className="w-4 h-4 mr-2" />
+            {showTestSuite ? "Hide Tests" : "Test Suite"}
+          </Button>
           <Link href="/dashboard">
             <Button variant="outline" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Dashboard
             </Button>
           </Link>
+          <Link href="/admin/settings">
+            <Button variant="outline" size="sm">
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+          </Link>
           <LanguageToggle />
           <Link href="/chat">
             <Button variant="outline" size="sm">
               <MessageSquare className="w-4 h-4 mr-2" />
-              {t("chat")}
+              Community
             </Button>
           </Link>
           <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -138,6 +186,13 @@ export default function AdminDashboard() {
           </Button>
         </div>
       </div>
+
+      {/* Test Suite (conditionally shown) */}
+      {showTestSuite && (
+        <div className="mb-6">
+          <ReportTest />
+        </div>
+      )}
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -169,10 +224,23 @@ export default function AdminDashboard() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8,429</div>
+            <div className="text-2xl font-bold">
+              {locationData
+                .reduce(
+                  (sum, location) =>
+                    sum + location.diseases.reduce((diseaseSum, disease) => diseaseSum + disease.count, 0),
+                  0,
+                )
+                .toLocaleString()}
+            </div>
             <p className="text-xs text-muted-foreground">+23% from last week</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Report Generator */}
+      <div className="mb-6">
+        <ReportGenerator totalUsers={totalUsers} locationData={locationData} />
       </div>
 
       {/* Quick Navigation */}
@@ -192,16 +260,18 @@ export default function AdminDashboard() {
             <Link href="/chat">
               <Button variant="outline" className="h-20 flex-col space-y-2 w-full">
                 <MessageSquare className="w-6 h-6" />
-                <span className="text-sm">Chat System</span>
+                <span className="text-sm">Community</span>
+              </Button>
+            </Link>
+            <Link href="/admin/settings">
+              <Button variant="outline" className="h-20 flex-col space-y-2 w-full">
+                <Settings className="w-6 h-6" />
+                <span className="text-sm">Admin Settings</span>
               </Button>
             </Link>
             <Button variant="outline" className="h-20 flex-col space-y-2">
               <Activity className="w-6 h-6" />
               <span className="text-sm">System Health</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Settings className="w-6 h-6" />
-              <span className="text-sm">Settings</span>
             </Button>
             <Link href="/admin/users">
               <Button variant="outline" className="h-20 flex-col space-y-2 w-full">
@@ -237,7 +307,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {location.diseases.map((disease, diseaseIndex) => (
+                  {location.diseases.slice(0, 3).map((disease, diseaseIndex) => (
                     <div key={diseaseIndex} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className={`w-3 h-3 rounded-full ${getSeverityColor(disease.severity)}`}></div>
@@ -250,6 +320,11 @@ export default function AdminDashboard() {
                     </div>
                   ))}
                 </div>
+                {location.diseases.length > 3 && (
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    +{location.diseases.length - 3} more diseases tracked
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -278,10 +353,12 @@ export default function AdminDashboard() {
               <Activity className="w-6 h-6" />
               <span className="text-sm">Analytics</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Settings className="w-6 h-6" />
-              <span className="text-sm">Settings</span>
-            </Button>
+            <Link href="/admin/settings">
+              <Button variant="outline" className="h-20 flex-col space-y-2 w-full">
+                <Settings className="w-6 h-6" />
+                <span className="text-sm">Settings</span>
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>

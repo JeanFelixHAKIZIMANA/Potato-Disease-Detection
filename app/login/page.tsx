@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { Eye, EyeOff, Loader2, Shield } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -96,7 +96,18 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
+
+          {/* Admin Login Link */}
           <div className="mt-6 text-center">
+            <Link href="/admin/login">
+              <Button variant="outline" size="sm" className="w-full">
+                <Shield className="w-4 h-4 mr-2" />
+                Admin Login
+              </Button>
+            </Link>
+          </div>
+
+          <div className="mt-4 text-center">
             <p className="text-sm text-muted-foreground">
               {"Don't have an account? "}
               <Link href="/signup" className="font-medium text-primary hover:underline">
@@ -104,18 +115,16 @@ export default function LoginPage() {
               </Link>
             </p>
           </div>
-          {/* Add admin demo info */}
+
+          {/* Add demo info */}
           <div className="mt-4 p-3 bg-blue-50 rounded-lg">
             <h4 className="text-sm font-medium text-blue-900 mb-2">Demo Access</h4>
             <div className="space-y-1 text-xs text-blue-700">
               <p>
-                <strong>Admin:</strong> admin@example.com
+                <strong>User:</strong> Any email + any password
               </p>
               <p>
-                <strong>User:</strong> Any other email
-              </p>
-              <p>
-                <strong>Password:</strong> Any password
+                <strong>Admin:</strong> Use "Admin Login" button above
               </p>
             </div>
           </div>

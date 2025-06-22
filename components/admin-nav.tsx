@@ -42,7 +42,7 @@ export function AdminNav({ onLogout }: AdminNavProps) {
         <DropdownMenuItem asChild>
           <Link href="/chat" className="flex items-center space-x-2 w-full">
             <MessageSquare className="w-4 h-4" />
-            <span>{t("chat")}</span>
+            <span>Community</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onLogout} className="flex items-center space-x-2 text-red-600">

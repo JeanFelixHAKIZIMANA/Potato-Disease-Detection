@@ -162,7 +162,7 @@ export default function DashboardPage() {
           <Link href="/chat">
             <Button variant="outline" size="sm">
               <MessageSquare className="w-4 h-4 mr-2" />
-              {t("chat")}
+              Community
             </Button>
           </Link>
           <LanguageToggle />
