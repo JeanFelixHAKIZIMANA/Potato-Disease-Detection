@@ -116,18 +116,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Add demo info */}
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <h4 className="text-sm font-medium text-blue-900 mb-2">Demo Access</h4>
-            <div className="space-y-1 text-xs text-blue-700">
-              <p>
-                <strong>User:</strong> Any email + any password
-              </p>
-              <p>
-                <strong>Admin:</strong> Use "Admin Login" button above
-              </p>
-            </div>
-          </div>
+          
         </CardContent>
       </Card>
     </div>

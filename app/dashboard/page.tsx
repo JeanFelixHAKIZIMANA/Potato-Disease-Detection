@@ -23,6 +23,7 @@ interface AnalysisResult {
 
 export default function DashboardPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [userName, setUserName] = useState("")
@@ -54,67 +55,56 @@ export default function DashboardPage() {
   }, [])
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setSelectedImage(e.target?.result as string)
-        setAnalysisResult(null)
-      }
-      reader.readAsDataURL(file)
+  const file = event.target.files?.[0]
+  if (file) {
+    setSelectedFile(file)
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setSelectedImage(e.target?.result as string)
+      setAnalysisResult(null)
     }
+    reader.readAsDataURL(file)
   }
+}
+
 
   const handleAnalyze = async () => {
-    if (!selectedImage) return
+  if (!selectedFile) return;
 
-    setIsAnalyzing(true)
+  setIsAnalyzing(true);
 
-    // Simulate AI analysis
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+  const formData = new FormData();
+  formData.append("file", selectedFile); // ✅ Send real File object
 
-    // Mock analysis result
-    const mockResults: AnalysisResult[] = [
-      {
-        confidence: 94.5,
-        category: "Healthy Food",
-        description:
-          "This appears to be a nutritious meal with balanced components including vegetables, proteins, and healthy fats.",
-        recommendations: [
-          "Add more leafy greens for extra nutrients",
-          "Consider portion control for optimal health",
-          "Pair with whole grains for complete nutrition",
-          "Stay hydrated with water during meals",
-        ],
-      },
-      {
-        confidence: 87.2,
-        category: "Plant",
-        description: "This is a healthy plant specimen showing good growth characteristics and vibrant coloration.",
-        recommendations: [
-          "Ensure adequate sunlight exposure",
-          "Water regularly but avoid overwatering",
-          "Consider fertilizing during growing season",
-          "Monitor for pests and diseases",
-        ],
-      },
-      {
-        confidence: 91.8,
-        category: "Object",
-        description: "This object appears to be in good condition with clear structural integrity.",
-        recommendations: [
-          "Regular maintenance will extend lifespan",
-          "Store in appropriate conditions",
-          "Follow manufacturer guidelines",
-          "Consider professional inspection if needed",
-        ],
-      },
-    ]
+  try {
+    const response = await fetch("http://localhost:8000/predict", {
+      method: "POST",
+      body: formData,
+    });
 
-    const randomResult = mockResults[Math.floor(Math.random() * mockResults.length)]
-    setAnalysisResult(randomResult)
-    setIsAnalyzing(false)
+    if (!response.ok) {
+      throw new Error("Prediction failed");
+    }
+
+    const result = await response.json();
+
+    const formattedResult: AnalysisResult = {
+      confidence: result.confidence,
+      category: result.class,
+      description: result.description || "No description provided.",
+      recommendations: result.recommendations || [],
+    };
+
+    setAnalysisResult(formattedResult);
+  } catch (error) {
+    console.error("Error analyzing image:", error);
+    alert("An error occurred while analyzing the image.");
+  } finally {
+    setIsAnalyzing(false);
   }
+};
+
+
 
   const handleLogout = () => {
     localStorage.removeItem("isAuthenticated")
@@ -124,11 +114,13 @@ export default function DashboardPage() {
   }
 
   const resetAnalysis = () => {
-    setSelectedImage(null)
-    setAnalysisResult(null)
-    if (fileInputRef.current) fileInputRef.current.value = ""
-    if (cameraInputRef.current) cameraInputRef.current.value = ""
-  }
+  setSelectedImage(null)
+  setSelectedFile(null)
+  setAnalysisResult(null)
+  if (fileInputRef.current) fileInputRef.current.value = ""
+  if (cameraInputRef.current) cameraInputRef.current.value = ""
+}
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
@@ -201,9 +193,16 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="relative w-full h-64 rounded-lg overflow-hidden bg-gray-100">
-                <Image src={selectedImage || "/placeholder.svg"} alt="Selected image" fill className="object-cover" />
+              <div className="relative max-w-full overflow-hidden rounded-lg bg-gray-100 border p-2">
+                <Image
+                  src={selectedImage || "/placeholder.svg"}
+                  alt="Selected image"
+                  width={400} // You can adjust this width to fit your layout
+                  height={400}
+                  className="rounded-lg object-contain mx-auto"
+                />
               </div>
+
               <div className="flex space-x-2">
                 <Button onClick={handleAnalyze} disabled={isAnalyzing} className="flex-1">
                   {isAnalyzing ? (

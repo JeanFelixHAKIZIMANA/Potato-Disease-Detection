@@ -1,23 +1,11 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Camera, Zap, Shield, Smartphone } from "lucide-react"
 import Link from "next/link"
 
 export default function HomePage() {
-  const router = useRouter()
-
-  useEffect(() => {
-    // Check if user is already authenticated
-    const isAuth = localStorage.getItem("isAuthenticated")
-    if (isAuth) {
-      router.push("/dashboard")
-    }
-  }, [router])
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
       {/* Header */}

@@ -5,17 +5,36 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 import io
+import os
+import traceback
+import openai 
+from openai import OpenAI
+from dotenv import load_dotenv
 
-# Load model
-model = tf.keras.models.load_model("Models/confirmed-potato_disease_model.h5")
-class_names = ["Early Blight", "Late Blight", "Healthy"]  # Adjust as per your model
+# Load environment variables
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Define custom_objects for all the augmentation layers used
+custom_objects = {
+    'RandomFlip': tf.keras.layers.RandomFlip,
+    'RandomRotation': tf.keras.layers.RandomRotation,
+    'RandomZoom': tf.keras.layers.RandomZoom,
+    'RandomHeight': tf.keras.layers.RandomHeight,
+    'RandomWidth': tf.keras.layers.RandomWidth,
+    'Rescaling': tf.keras.layers.Rescaling,
+}
+
+model = tf.keras.models.load_model("Models/potato_pretrain_model.h5", custom_objects=custom_objects, compile=False)
+class_names = ["Early Blight", "Late Blight", "Healthy"]
 
 app = FastAPI()
 
-# CORS settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For production, replace with frontend domain
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -24,16 +43,83 @@ app.add_middleware(
 class PredictionResult(BaseModel):
     label: str
     confidence: float
+    description: str
+    recommendations: list[str]
+    chatgpt_advice: str
+
+descriptions = {
+    "Early Blight": {
+        "description": "Early Blight causes dark spots with concentric rings on older leaves and can lead to defoliation.",
+        "recommendations": [
+            "Remove affected leaves.",
+            "Use crop rotation to reduce soil-borne spores.",
+            "Apply fungicide if necessary.",
+            "Avoid overhead irrigation."
+        ]
+    },
+    "Late Blight": {
+        "description": "Late Blight results in large brown lesions with pale green halos. It spreads rapidly under moist conditions.",
+        "recommendations": [
+            "Remove and destroy infected plants.",
+            "Use resistant potato varieties.",
+            "Apply copper-based fungicides.",
+            "Avoid working with wet plants."
+        ]
+    },
+    "Healthy": {
+        "description": "This plant appears healthy with no signs of disease or stress.",
+        "recommendations": [
+            "Continue regular watering and sunlight.",
+            "Monitor for pests weekly.",
+            "Keep leaves dry to prevent fungal infections.",
+            "Maintain healthy soil with compost."
+        ]
+    }
+}
+
+def generate_chatgpt_response(label: str, description: str, forecast_summary: str = "warm and humid conditions expected with intermittent rain"):
+    prompt = f"""
+You are a smart agricultural assistant. The potato plant is showing signs of {label} disease. 
+Here is a description: "{description}". 
+
+Based on this disease in potato, what causes it during this season, how can it be treated, and what are the steps forward? 
+Also, considering the 14-day weather forecast ({forecast_summary}), what do you recommend to keep the plant in optimal health?
+"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are an expert plant disease advisor."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=500
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print("ChatGPT API error:", e)
+    traceback.print_exc()
+    return "Unable to retrieve advice from ChatGPT at this time. Please try again later."
 
 @app.post("/predict", response_model=PredictionResult)
 async def predict(file: UploadFile = File(...)):
     contents = await file.read()
     image = Image.open(io.BytesIO(contents)).convert("RGB")
     image = image.resize((224, 224))
-    img_array = np.expand_dims(np.array(image) / 255.0, axis=0)
+    img_array = np.expand_dims(np.array(image), axis=0)
 
     prediction = model.predict(img_array)[0]
     confidence = float(np.max(prediction)) * 100
     label = class_names[np.argmax(prediction)]
+    metadata = descriptions[label]
 
-    return {"label": label, "confidence": round(confidence, 2)}
+    # Generate ChatGPT advice
+    chatgpt_advice = generate_chatgpt_response(label, metadata["description"])
+
+    return {
+        "label": label,
+        "confidence": round(confidence, 2),
+        "description": metadata["description"],
+        "recommendations": metadata["recommendations"],
+        "chatgpt_advice": chatgpt_advice
+    }

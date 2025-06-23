@@ -33,6 +33,40 @@ app.add_middleware(
 class PredictionResult(BaseModel):
     label: str
     confidence: float
+    description: str
+    recommendations: list[str]
+
+
+descriptions = {
+    "Early Blight": {
+        "description": "Early Blight causes dark spots with concentric rings on older leaves and can lead to defoliation.",
+        "recommendations": [
+            "Remove affected leaves.",
+            "Use crop rotation to reduce soil-borne spores.",
+            "Apply fungicide if necessary.",
+            "Avoid overhead irrigation."
+        ]
+    },
+    "Late Blight": {
+        "description": "Late Blight results in large brown lesions with pale green halos. It spreads rapidly under moist conditions.",
+        "recommendations": [
+            "Remove and destroy infected plants.",
+            "Use resistant potato varieties.",
+            "Apply copper-based fungicides.",
+            "Avoid working with wet plants."
+        ]
+    },
+    "Healthy": {
+        "description": "This plant appears healthy with no signs of disease or stress.",
+        "recommendations": [
+            "Continue regular watering and sunlight.",
+            "Monitor for pests weekly.",
+            "Keep leaves dry to prevent fungal infections.",
+            "Maintain healthy soil with compost."
+        ]
+    }
+}
+
 
 @app.post("/predict", response_model=PredictionResult)
 async def predict(file: UploadFile = File(...)):
@@ -42,10 +76,17 @@ async def predict(file: UploadFile = File(...)):
     img_array = np.expand_dims(np.array(image), axis=0)
 
     prediction = model.predict(img_array)[0]
-    print("Raw prediction:", prediction)  # <--- ADD THIS LINE
-
     confidence = float(np.max(prediction)) * 100
     label = class_names[np.argmax(prediction)]
 
-    return {"label": label, "confidence": round(confidence, 2)}
+    metadata = descriptions[label]
+
+    return {
+        "label": label,
+        "confidence": round(confidence, 2),
+        "description": metadata["description"],
+        "recommendations": metadata["recommendations"]
+    }
+
+
 

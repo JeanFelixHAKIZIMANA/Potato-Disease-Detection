@@ -74,21 +74,7 @@ export default function AdminLoginPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Demo Credentials Info */}
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center">
-              <AlertCircle className="w-4 h-4 mr-2" />
-              Demo Credentials
-            </h4>
-            <div className="space-y-1 text-xs text-blue-800">
-              <p>
-                <strong>Email:</strong> admin@aivision.com
-              </p>
-              <p>
-                <strong>Password:</strong> Admin123!
-              </p>
-            </div>
-          </div>
+          
 
           {/* Error Alert */}
           {error && (
